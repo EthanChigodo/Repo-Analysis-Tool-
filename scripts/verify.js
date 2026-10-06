@@ -45,6 +45,7 @@ const {
   suggestPaths,
 } = await import(path.join(ROOT, 'server/metrics.js'));
 const { mergeAuthors, unmergeAuthors } = await import(path.join(ROOT, 'server/authors.js'));
+const { createLogParser } = await import(path.join(ROOT, 'server/git.js'));
 
 let failures = 0;
 let checks = 0;
@@ -243,6 +244,11 @@ function runMetricAssertions(db, id, hashes) {
   const filesRoot = Object.fromEntries(dash.files.items.map((f) => [f.name, f]));
   assert('empty.txt' in filesRoot, 'empty file listed');
   eq(filesRoot['empty.txt'].churn, 0, 'empty file churn 0');
+  const emptyDash = getDashboard(db, id, {
+    repoId: id,
+    scope: resolveScope(db, id, 'empty.txt'),
+  });
+  eq(emptyDash.authors.length, 0, 'zero-activity file has no author rows');
   assert(!('bin.dat' in filesRoot), 'binary file not measured');
 
   // authors (mailmap merged Alice into alice@new.com)
@@ -338,6 +344,20 @@ function runMetricAssertions(db, id, hashes) {
 }
 
 // --------------------------------------------------------------------- run
+console.log('checking streaming parser chunk boundaries...');
+const parsedCommits = [];
+const parser = createLogParser((parsed) => parsedCommits.push(parsed));
+const longPath = `${'long-directory/'.repeat(8)}file.txt`;
+const payload = Buffer.from(
+  `\x02abc123\x01\x01Long Path\x01long@example.com\x011600000000\x01subject\0\n1\t2\t${longPath}\0`
+);
+parser.push(payload.subarray(0, payload.length - 1));
+parser.push(payload.subarray(payload.length - 1));
+parser.end();
+eq(parsedCommits.length, 1, 'parser keeps a token split before its NUL terminator');
+eq(parsedCommits[0]?.files[0]?.path, longPath, 'parser preserves a long split path');
+eq(parsedCommits[0]?.files[0]?.removed, 2, 'parser preserves split numstat values');
+
 console.log('building synthetic repository...');
 const repoDir = path.join(TEST_DIR, 'synthetic-repo');
 const hashes = buildSyntheticRepo(repoDir);

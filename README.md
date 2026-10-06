@@ -66,7 +66,7 @@ This runs `scripts/verify.js`, a self-contained check that builds a small
 synthetic git repository (with renames, binary files, deletions, a merge
 commit, and a `.mailmap`), ingests it through both the zip and clone paths,
 and asserts every metric formula from the brief against hand-computed values
-(149 checks).
+(154 checks).
 
 ## Usage
 

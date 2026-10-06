@@ -232,6 +232,7 @@ function authorMetrics(db, filters, prepared, scope) {
        ${hashJoin}
        WHERE ${commitWhere.join(' AND ')} AND ${scopeFilter(scope, params)}
        GROUP BY key
+       HAVING SUM(c.added + c.removed) > 0
        ORDER BY churn DESC`
     )
     .all(params);

@@ -344,7 +344,17 @@ export function AuthorMergeModal({ repoId, authors, onChanged, onClose, toast })
 }
 
 // ------------------------------------------------------------------ charts
-const AXIS = { stroke: '#8b93a7', fontSize: 11 };
+const AXIS = { fill: '#aeb7c9', fontSize: 11 };
+const TOOLTIP_CONTENT = {
+  backgroundColor: '#111827',
+  border: '1px solid #34405a',
+  borderRadius: 10,
+  boxShadow: '0 12px 30px rgba(0, 0, 0, 0.35)',
+  color: '#f8fafc',
+};
+const TOOLTIP_LABEL = { color: '#f8fafc', fontWeight: 600, marginBottom: 4 };
+const TOOLTIP_ITEM = { color: '#dfe4ee' };
+const TOOLTIP_CURSOR = { fill: 'rgba(91, 141, 239, 0.08)' };
 
 export function ActivityChart({ data, bucketSec }) {
   const rows = useMemo(
@@ -367,8 +377,11 @@ export function ActivityChart({ data, bucketSec }) {
         <XAxis dataKey="label" tick={AXIS} tickLine={false} axisLine={{ stroke: '#2a3040' }} />
         <YAxis tick={AXIS} tickLine={false} axisLine={false} />
         <Tooltip
-          contentStyle={{ background: '#161b26', border: '1px solid #2a3040', borderRadius: 8 }}
-          labelStyle={{ color: '#c8cede' }}
+          formatter={(value, name) => [fmt.num(value), name]}
+          contentStyle={TOOLTIP_CONTENT}
+          labelStyle={TOOLTIP_LABEL}
+          itemStyle={TOOLTIP_ITEM}
+          cursor={TOOLTIP_CURSOR}
         />
         <Legend wrapperStyle={{ fontSize: 12 }} />
         <Bar dataKey="added" name="Added lines" fill="#3fb27f" radius={[3, 3, 0, 0]} />
@@ -397,8 +410,11 @@ export function AuthorChart({ authors }) {
           axisLine={false}
         />
         <Tooltip
-          formatter={(v, _n, item) => [`${fmt.num(v)} (${fmt.pct(item.payload.ownership)} ownership)`, 'churn']}
-          contentStyle={{ background: '#161b26', border: '1px solid #2a3040', borderRadius: 8 }}
+          formatter={(v, _n, item) => [`${fmt.num(v)} (${fmt.pct(item.payload.ownership)} ownership)`, 'Churn']}
+          contentStyle={TOOLTIP_CONTENT}
+          labelStyle={TOOLTIP_LABEL}
+          itemStyle={TOOLTIP_ITEM}
+          cursor={TOOLTIP_CURSOR}
         />
         <Bar dataKey="churn" name="Churn" radius={[0, 3, 3, 0]}>
           {rows.map((a, i) => (
@@ -427,7 +443,11 @@ export function TopObjectsChart({ items, title }) {
           axisLine={false}
         />
         <Tooltip
-          contentStyle={{ background: '#161b26', border: '1px solid #2a3040', borderRadius: 8 }}
+          formatter={(value, name) => [fmt.num(value), name]}
+          contentStyle={TOOLTIP_CONTENT}
+          labelStyle={TOOLTIP_LABEL}
+          itemStyle={TOOLTIP_ITEM}
+          cursor={TOOLTIP_CURSOR}
         />
         <Bar dataKey="churn" name="Churn" fill="#5b8def" radius={[0, 3, 3, 0]} />
       </BarChart>

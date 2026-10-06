@@ -206,8 +206,10 @@ export function createLogParser(onCommit) {
         const rec = buf.indexOf(0x02);
         if (!expectToken && (nul === -1 || (rec !== -1 && rec < nul))) {
           if (rec === -1) {
-            // keep a small tail in case \x02 arrives split across chunks
-            if (buf.length > 64) buf = Buffer.alloc(0);
+            // The chunk ended in the middle of a token. Keep every byte until
+            // its NUL terminator arrives; long paths and subjects regularly
+            // cross stream chunk boundaries.
+            expectToken = buf.length > 0;
             return;
           }
           if (stage === 'entries') finishCommit();

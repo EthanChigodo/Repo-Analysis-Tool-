@@ -187,10 +187,14 @@ function listChildren(db, filters, prepared, scope, { kind, sort, dir, limit, of
     FROM (${inner})
     GROUP BY child`;
   const grouped = `SELECT child, isDir, added, removed, modifications FROM (${mid}) WHERE ${kindFilter}`;
+  // COUNT(*) OVER() piggybacks the total row count onto the same pass that
+  // produces the page, instead of re-running the group-by a second time.
+  const windowed = `SELECT *, COUNT(*) OVER() AS total_count FROM (${grouped})`;
   const rows = db
-    .prepare(`${grouped} ORDER BY ${orderCol} ${orderDir}, child ASC LIMIT @limit OFFSET @offset`)
+    .prepare(`${windowed} ORDER BY ${orderCol} ${orderDir}, child ASC LIMIT @limit OFFSET @offset`)
     .all({ ...params, limit, offset });
-  const total = db.prepare(`SELECT COUNT(*) AS n FROM (${grouped})`).get(params).n;
+  const total =
+    rows.length > 0 ? rows[0].total_count : db.prepare(`SELECT COUNT(*) AS n FROM (${grouped})`).get(params).n;
   return {
     total,
     items: rows.map((r) => ({

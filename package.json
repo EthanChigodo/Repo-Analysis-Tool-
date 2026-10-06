@@ -1,0 +1,32 @@
+{
+  "name": "repo-analysis-tool",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "RAT - Repo Analysis Tool: git metrics dashboard for files, directories, repositories, commit sets and authors",
+  "scripts": {
+    "dev": "concurrently -k -n server,web \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "node server/index.js",
+    "dev:web": "vite",
+    "build": "vite build",
+    "start": "node server/index.js",
+    "test": "node scripts/verify.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "extract-zip": "^2.0.1",
+    "multer": "^2.0.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.15.0",
+    "sql.js": "^1.13.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "vite": "^5.4.11"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

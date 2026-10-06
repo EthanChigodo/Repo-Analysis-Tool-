@@ -301,7 +301,11 @@ function runMetricAssertions(db, id, hashes) {
   eq(aliceOnly.set.size, 3, '|H| filtered by author');
   eq(aliceOnly.object.churn, 13, 'author-filtered churn');
   eq(aliceOnly.authors.length, 1, 'single author in filtered authors');
-  near(aliceOnly.authors[0].ownership, 1, 'ownership 1.0 when single author');
+  // Per brief: lambda_{H,o} (the denominator) is total churn over ALL
+  // authors in H, not narrowed by the author filter - so alice's true
+  // ownership (13/26) must still read 0.5, not 1.0, even when she is the
+  // only author selected.
+  near(aliceOnly.authors[0].ownership, 0.5, 'ownership reflects true share even when author-filtered');
 
   // directory scope drill-down: src
   const srcScope = resolveScope(db, id, 'src');

@@ -22,7 +22,10 @@
  *  Author metrics (over H, object o, author a):
  *    author modifications = #{ h in H : a = h[a] and lambda(h,o) > 0 }
  *    author churn         = sum of lambda(h,o) for h in H with a = h[a]
- *    author ownership     = author churn / total churn   (0 when total = 0)
+ *    author ownership     = author churn / total churn on o over H across
+ *                           ALL authors (not narrowed by an author filter -
+ *                           selecting one author should show their true
+ *                           share, not 100%).
  */
 
 function escapeLike(s) {
@@ -204,7 +207,14 @@ function listChildren(db, filters, prepared, scope, { kind, sort, dir, limit, of
   };
 }
 
-/** Author metrics (modifications, churn, ownership) over the scope in H. */
+/**
+ * Author metrics (modifications, churn, ownership) over the scope in H.
+ * Per the brief, lambda_{H,o} (the ownership denominator) is the TOTAL churn
+ * on o over H across every author - it is not narrowed by an author filter.
+ * So we compute the per-author rows with the active filters (which may
+ * restrict to selected authors), but always compute the denominator against
+ * the unfiltered-by-author commit set.
+ */
 function authorMetrics(db, filters, prepared, scope) {
   const { params, commitWhere, hashJoin } = prepared;
   const rows = db
@@ -221,7 +231,22 @@ function authorMetrics(db, filters, prepared, scope) {
        ORDER BY churn DESC`
     )
     .all(params);
-  const totalChurn = rows.reduce((acc, r) => acc + (r.churn || 0), 0);
+
+  const unfilteredPrepared =
+    filters.authors && filters.authors.length
+      ? prepareFilters(db, { ...filters, authors: null })
+      : prepared;
+  const totalChurn = db
+    .prepare(
+      `SELECT COALESCE(SUM(c.added + c.removed), 0) AS churn
+       FROM changes c
+       JOIN commits h ON h.repo_id = c.repo_id AND h.hash = c.hash
+       LEFT JOIN author_merge am ON am.repo_id = h.repo_id AND am.email = h.author_email
+       ${unfilteredPrepared.hashJoin}
+       WHERE ${unfilteredPrepared.commitWhere.join(' AND ')} AND ${scopeFilter(scope, unfilteredPrepared.params)}`
+    )
+    .get(unfilteredPrepared.params).churn;
+
   return rows.map((r) => ({
     key: r.key,
     modifications: r.modifications || 0,
